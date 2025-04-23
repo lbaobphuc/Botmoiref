@@ -1,24 +1,18 @@
-from flask import Flask, request
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, Bot
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-import os
-import nest_asyncio
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from keep_alive import keep_alive
 import asyncio
+import os
 
-TOKEN = os.environ.get("BOT_TOKEN", "7726374817:AAFMgUVBQ0ABJiR0Wldoe1yoO4xcJkKRjro")
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL", "https://your-render-url.onrender.com")  # sửa thành URL Render
-
+TOKEN = "7726374817:AAFMgUVBQ0ABJiR0Wldoe1yoO4xcJkKRjro"
 ADMIN_ID = 7865938276
 REQUIRED_CHANNELS = ["@kiemvaidongle", "@kiemvaidonglechoae"]
 REF_REWARD = 800
 MIN_WITHDRAW = 8000
+WEBHOOK_URL = "https://botmoiref.onrender.com"
 
 users = {}
 ip_ban_list = []
-BOT_USERNAME = "Botkiemvaidongle_bot"
-
-bot = Bot(token=TOKEN)
-app = Flask(__name__)
 
 def menu_keyboard():
     return InlineKeyboardMarkup([
@@ -89,7 +83,7 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         balance = users[user_id]["balance"]
         text = f"💰 Số dư của bạn: {balance}đ"
     elif query.data == "ref":
-        text = f"📮 Link mời bạn: https://t.me/{BOT_USERNAME}?start={user_id}"
+        text = f"📮 Link mời bạn: https://t.me/Botkiemvaidongle_bot?start={user_id}"
     elif query.data == "stats":
         text = f"📊 Số người đã dùng bot: {len(users)}"
     elif query.data == "withdraw":
@@ -105,21 +99,20 @@ async def handle_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await query.edit_message_text(text=text, reply_markup=menu_keyboard())
 
-@app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    application.update_queue.put_nowait(update)
-    return "OK"
-
-async def setup():
-    global application
-    application = Application.builder().token(TOKEN).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(handle_buttons))
-    await bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+async def main():
+    app = ApplicationBuilder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(handle_buttons))
+    keep_alive()
+    print("Bot đang chạy webhook...")
+    await app.bot.set_webhook(WEBHOOK_URL)
+    await app.run_webhook(
+        listen="0.0.0.0",
+        port=80,
+        webhook_url=WEBHOOK_URL
+    )
 
 if __name__ == "__main__":
+    import nest_asyncio
     nest_asyncio.apply()
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(setup())
-    app.run(host="0.0.0.0", port=10000)
+    asyncio.get_event_loop().run_until_complete(main())
