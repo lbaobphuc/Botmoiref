@@ -1,15 +1,14 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from keep_alive import keep_alive
-import asyncio
 import os
 
 TOKEN = "7726374817:AAFMgUVBQ0ABJiR0Wldoe1yoO4xcJkKRjro"
+WEBHOOK_URL = "https://botmoiref.onrender.com"
 ADMIN_ID = 7865938276
 REQUIRED_CHANNELS = ["@kiemvaidongle", "@kiemvaidonglechoae"]
 REF_REWARD = 800
 MIN_WITHDRAW = 8000
-WEBHOOK_URL = "https://botmoiref.onrender.com"
 
 users = {}
 ip_ban_list = []
@@ -103,16 +102,18 @@ async def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_buttons))
+
     keep_alive()
-    print("Bot đang chạy webhook...")
-    await app.bot.set_webhook(WEBHOOK_URL)
+    print("Bot đang chạy bằng Webhook...")
+    await app.bot.set_webhook(url=WEBHOOK_URL)
     await app.run_webhook(
         listen="0.0.0.0",
-        port=80,
+        port=int(os.environ.get("PORT", 10000)),
         webhook_url=WEBHOOK_URL
     )
 
 if __name__ == "__main__":
     import nest_asyncio
+    import asyncio
     nest_asyncio.apply()
     asyncio.get_event_loop().run_until_complete(main())
